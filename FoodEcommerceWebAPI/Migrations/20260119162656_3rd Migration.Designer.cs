@@ -4,6 +4,7 @@ using FoodEcommerceWebAPI.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace FoodEcommerceWebAPI.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260119162656_3rd Migration")]
+    partial class _3rdMigration
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -220,20 +223,6 @@ namespace FoodEcommerceWebAPI.Migrations
                     b.ToTable("OrderItems");
                 });
 
-            modelBuilder.Entity("FoodEcommerceWebAPI.Models.Entities.OrderStatus", b =>
-                {
-                    b.Property<int>("Orderid")
-                        .HasColumnType("int");
-
-                    b.Property<string>("Status")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.HasKey("Orderid");
-
-                    b.ToTable("orderStatuses");
-                });
-
             modelBuilder.Entity("FoodEcommerceWebAPI.Models.Entities.RoleEntity", b =>
                 {
                     b.Property<int>("Id")
@@ -349,15 +338,6 @@ namespace FoodEcommerceWebAPI.Migrations
                     b.Navigation("FoodItem");
 
                     b.Navigation("Order");
-                });
-
-            modelBuilder.Entity("FoodEcommerceWebAPI.Models.Entities.OrderStatus", b =>
-                {
-                    b.HasOne("FoodEcommerceWebAPI.Models.Entities.OrderEntity", null)
-                        .WithOne()
-                        .HasForeignKey("FoodEcommerceWebAPI.Models.Entities.OrderStatus", "Orderid")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
                 });
 
             modelBuilder.Entity("FoodEcommerceWebAPI.Models.Entities.CartEntity", b =>

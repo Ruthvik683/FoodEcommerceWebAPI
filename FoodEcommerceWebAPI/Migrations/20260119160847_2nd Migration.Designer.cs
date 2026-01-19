@@ -4,6 +4,7 @@ using FoodEcommerceWebAPI.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace FoodEcommerceWebAPI.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260119160847_2nd Migration")]
+    partial class _2ndMigration
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -54,8 +57,6 @@ namespace FoodEcommerceWebAPI.Migrations
 
                     b.HasKey("ID");
 
-                    b.HasIndex("Userid");
-
                     b.ToTable("Addresses");
                 });
 
@@ -74,8 +75,6 @@ namespace FoodEcommerceWebAPI.Migrations
                         .HasColumnType("datetime2");
 
                     b.HasKey("Id");
-
-                    b.HasIndex("UserID");
 
                     b.ToTable("Carts");
                 });
@@ -98,10 +97,6 @@ namespace FoodEcommerceWebAPI.Migrations
                         .HasColumnType("int");
 
                     b.HasKey("Id");
-
-                    b.HasIndex("CartId");
-
-                    b.HasIndex("FoodItemId");
 
                     b.ToTable("CartItems");
                 });
@@ -135,9 +130,6 @@ namespace FoodEcommerceWebAPI.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("FoodItemId"));
 
-                    b.Property<int>("CategoryId")
-                        .HasColumnType("int");
-
                     b.Property<string>("Description")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
@@ -168,12 +160,6 @@ namespace FoodEcommerceWebAPI.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("OrderId"));
 
-                    b.Property<DateTime>("OrderDate")
-                        .HasColumnType("datetime2");
-
-                    b.Property<string>("ShippingAddress")
-                        .HasColumnType("nvarchar(max)");
-
                     b.Property<string>("Status")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
@@ -186,52 +172,7 @@ namespace FoodEcommerceWebAPI.Migrations
 
                     b.HasKey("OrderId");
 
-                    b.HasIndex("UserId");
-
                     b.ToTable("Orders");
-                });
-
-            modelBuilder.Entity("FoodEcommerceWebAPI.Models.Entities.OrderItemEntity", b =>
-                {
-                    b.Property<int>("OrderItemId")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("OrderItemId"));
-
-                    b.Property<int>("FoodItemId")
-                        .HasColumnType("int");
-
-                    b.Property<int>("OrderId")
-                        .HasColumnType("int");
-
-                    b.Property<int>("Quantity")
-                        .HasColumnType("int");
-
-                    b.Property<decimal>("UnitPrice")
-                        .HasColumnType("decimal(18,2)");
-
-                    b.HasKey("OrderItemId");
-
-                    b.HasIndex("FoodItemId");
-
-                    b.HasIndex("OrderId");
-
-                    b.ToTable("OrderItems");
-                });
-
-            modelBuilder.Entity("FoodEcommerceWebAPI.Models.Entities.OrderStatus", b =>
-                {
-                    b.Property<int>("Orderid")
-                        .HasColumnType("int");
-
-                    b.Property<string>("Status")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.HasKey("Orderid");
-
-                    b.ToTable("orderStatuses");
                 });
 
             modelBuilder.Entity("FoodEcommerceWebAPI.Models.Entities.RoleEntity", b =>
@@ -280,101 +221,6 @@ namespace FoodEcommerceWebAPI.Migrations
                     b.HasKey("UserId");
 
                     b.ToTable("Users");
-                });
-
-            modelBuilder.Entity("FoodEcommerceWebAPI.Models.Entities.AddressEntitiy", b =>
-                {
-                    b.HasOne("FoodEcommerceWebAPI.Models.Entities.UserEntity", null)
-                        .WithMany("Addresses")
-                        .HasForeignKey("Userid")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-                });
-
-            modelBuilder.Entity("FoodEcommerceWebAPI.Models.Entities.CartEntity", b =>
-                {
-                    b.HasOne("FoodEcommerceWebAPI.Models.Entities.UserEntity", "User")
-                        .WithMany()
-                        .HasForeignKey("UserID")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("User");
-                });
-
-            modelBuilder.Entity("FoodEcommerceWebAPI.Models.Entities.CartItemEntity", b =>
-                {
-                    b.HasOne("FoodEcommerceWebAPI.Models.Entities.CartEntity", "Cart")
-                        .WithMany("CartItems")
-                        .HasForeignKey("CartId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("FoodEcommerceWebAPI.Models.Entities.FoodItemsEntity", "FoodItem")
-                        .WithMany()
-                        .HasForeignKey("FoodItemId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Cart");
-
-                    b.Navigation("FoodItem");
-                });
-
-            modelBuilder.Entity("FoodEcommerceWebAPI.Models.Entities.OrderEntity", b =>
-                {
-                    b.HasOne("FoodEcommerceWebAPI.Models.Entities.UserEntity", "User")
-                        .WithMany("Orders")
-                        .HasForeignKey("UserId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("User");
-                });
-
-            modelBuilder.Entity("FoodEcommerceWebAPI.Models.Entities.OrderItemEntity", b =>
-                {
-                    b.HasOne("FoodEcommerceWebAPI.Models.Entities.FoodItemsEntity", "FoodItem")
-                        .WithMany()
-                        .HasForeignKey("FoodItemId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("FoodEcommerceWebAPI.Models.Entities.OrderEntity", "Order")
-                        .WithMany("OrderItems")
-                        .HasForeignKey("OrderId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("FoodItem");
-
-                    b.Navigation("Order");
-                });
-
-            modelBuilder.Entity("FoodEcommerceWebAPI.Models.Entities.OrderStatus", b =>
-                {
-                    b.HasOne("FoodEcommerceWebAPI.Models.Entities.OrderEntity", null)
-                        .WithOne()
-                        .HasForeignKey("FoodEcommerceWebAPI.Models.Entities.OrderStatus", "Orderid")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-                });
-
-            modelBuilder.Entity("FoodEcommerceWebAPI.Models.Entities.CartEntity", b =>
-                {
-                    b.Navigation("CartItems");
-                });
-
-            modelBuilder.Entity("FoodEcommerceWebAPI.Models.Entities.OrderEntity", b =>
-                {
-                    b.Navigation("OrderItems");
-                });
-
-            modelBuilder.Entity("FoodEcommerceWebAPI.Models.Entities.UserEntity", b =>
-                {
-                    b.Navigation("Addresses");
-
-                    b.Navigation("Orders");
                 });
 #pragma warning restore 612, 618
         }
