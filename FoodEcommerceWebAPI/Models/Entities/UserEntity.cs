@@ -8,6 +8,10 @@
     /// representing their purchase history. This entity is central to the system as it
     /// connects to carts, orders, and addresses.
     /// 
+    /// Soft Delete: The IsActive flag allows for logical deletion instead of physical deletion.
+    /// When a user requests account deletion, IsActive is set to false rather than deleting the record.
+    /// This preserves data for auditing, historical records, and potential account recovery.
+    /// 
     /// Example: A customer named "John Doe" with email "john@example.com" has orders and multiple addresses.
     /// </summary>
     public class UserEntity
@@ -58,6 +62,36 @@
         /// Example: "$2b$12$R9h/cIPz0gi.URNNX3kh2OPST9/PgBkqquzi.Ss7KIUgO2t0jWMUW"
         /// </summary>
         public required string PasswordHash { get; set; }
+
+        /// <summary>
+        /// Soft delete flag indicating whether the user account is active.
+        /// 
+        /// Values:
+        /// - true (1): User account is active and can log in, place orders, and perform operations
+        /// - false (0): User account is logically deleted but preserved in database for:
+        ///   - Historical audit trail
+        ///   - Order records and transaction history
+        ///   - Legal/compliance requirements
+        ///   - Potential account recovery
+        /// 
+        /// Default: true (set to true when user registers)
+        /// 
+        /// Soft Delete Benefits:
+        /// - Preserves data integrity and referential relationships
+        /// - Maintains audit trail and historical records
+        /// - Allows account reactivation if needed
+        /// - Complies with data retention policies
+        /// - Prevents orphaned orders and address records
+        /// 
+        /// When IsActive = false:
+        /// - User cannot log in
+        /// - User data is excluded from all queries (filtered in DbContext)
+        /// - Orders and addresses remain linked for historical purposes
+        /// - User record is preserved in database
+        /// 
+        /// Example: User deletes account → IsActive becomes false → User data hidden but preserved
+        /// </summary>
+        public bool IsActive { get; set; } = true;
 
         /// <summary>
         /// Navigation property to the collection of Addresses.
