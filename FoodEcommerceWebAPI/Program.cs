@@ -1,4 +1,7 @@
-using Microsoft.AspNetCore.Builder;
+using FoodEcommerceWebAPI.Configuration;
+using FoodEcommerceWebAPI.Data;
+using FoodEcommerceWebAPI.Services;
+using Microsoft.AspNetCore.Authentication.JwtBearer ;
 using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);

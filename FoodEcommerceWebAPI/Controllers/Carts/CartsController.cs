@@ -1,6 +1,7 @@
 using FoodEcommerceWebAPI.Data;
 using FoodEcommerceWebAPI.Models.DTOs;
 using FoodEcommerceWebAPI.Models.Entities;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
@@ -8,36 +9,24 @@ namespace FoodEcommerceWebAPI.Controllers.Carts
 {
     #region APISummary
     /// <summary>
-    /// CartsController handles all shopping cart-related API operations.
+        /// CartsController handles all shopping cart-related API operations with role-based authorization.
     /// 
-    /// Provides endpoints for:
-    /// - Retrieving user's shopping cart
-    /// - Adding items to cart
-    /// - Updating item quantities
-    /// - Removing items from cart
-    /// - Clearing entire cart
-    /// - Getting cart summary/totals
-    /// 
-    /// This controller uses DTOs (Data Transfer Objects) to:
-    /// - Provide a clean API contract separate from database entities
-    /// - Validate input data before processing
-    /// - Calculate totals and cart information
-    /// 
-    /// Each user has one active shopping cart where they can add products before checkout.
-    /// Cart is temporary and is converted to an order upon checkout.
-    /// 
-    /// Route: /api/carts
-    /// Endpoints:
+    /// Customer Endpoints (Authentication Required):
     /// - GET /api/carts/{userId} - Get user's cart
     /// - GET /api/carts/{userId}/summary - Get cart summary with totals
     /// - POST /api/carts/{userId}/items - Add item to cart
     /// - PUT /api/carts/{userId}/items/{cartItemId} - Update item quantity
     /// - DELETE /api/carts/{userId}/items/{cartItemId} - Remove item from cart
     /// - DELETE /api/carts/{userId} - Clear entire cart
+    /// 
+    /// Authorization:
+    /// - Customers can only access their own cart
+    /// - Admins can access any user's cart
     /// </summary>
     #endregion
     [Route("api/[controller]")]
     [ApiController]
+    [Authorize]
     public class CartsController : ControllerBase
     {
         /// <summary>
@@ -58,14 +47,8 @@ namespace FoodEcommerceWebAPI.Controllers.Carts
 
         /// <summary>
         /// Retrieves the shopping cart for a specific user.
-        /// 
-        /// HTTP Method: GET
-        /// Route: /api/carts/{userId}
-        /// 
-        /// This endpoint returns the complete shopping cart including all items.
-        /// If user doesn't have a cart, a new one is created automatically.
-        /// 
-        /// Important: Should be restricted with authentication to allow users to view only their own cart.
+        /// CUSTOMER ENDPOINT - Requires Authentication
+        /// Customers can only access their own cart
         /// </summary>
         /// <param name="userId">The user ID whose cart to retrieve</param>
         /// <returns>
@@ -98,6 +81,15 @@ namespace FoodEcommerceWebAPI.Controllers.Carts
         [HttpGet("{userId}")]
         public async Task<IActionResult> GetCart(int userId)
         {
+            var currentUserId = int.Parse(User.FindFirst("uid")?.Value ?? "0");
+            var userRole = User.FindFirst("role")?.Value;
+
+            // Authorization check
+            if (userRole != "Admin" && currentUserId != userId)
+            {
+                return Forbid("You can only access your own cart");
+            }
+
             // Verify user exists and is active
             var user = await dbContext.Users.FirstOrDefaultAsync(u => u.UserId == userId && u.IsActive);
             if (user == null)
@@ -131,12 +123,7 @@ namespace FoodEcommerceWebAPI.Controllers.Carts
 
         /// <summary>
         /// Retrieves a quick summary of the shopping cart with totals.
-        /// 
-        /// HTTP Method: GET
-        /// Route: /api/carts/{userId}/summary
-        /// 
-        /// This endpoint returns cart information without full item details.
-        /// Useful for header/navbar displays showing item count and total.
+        /// CUSTOMER ENDPOINT - Requires Authentication
         /// </summary>
         /// <param name="userId">The user ID whose cart summary to retrieve</param>
         /// <returns>
@@ -155,6 +142,14 @@ namespace FoodEcommerceWebAPI.Controllers.Carts
         [HttpGet("{userId}/summary")]
         public async Task<IActionResult> GetCartSummary(int userId)
         {
+            var currentUserId = int.Parse(User.FindFirst("uid")?.Value ?? "0");
+            var userRole = User.FindFirst("role")?.Value;
+
+            if (userRole != "Admin" && currentUserId != userId)
+            {
+                return Forbid("You can only access your own cart");
+            }
+
             // Verify user exists and is active
             var user = await dbContext.Users.FirstOrDefaultAsync(u => u.UserId == userId && u.IsActive);
             if (user == null)
@@ -192,25 +187,7 @@ namespace FoodEcommerceWebAPI.Controllers.Carts
 
         /// <summary>
         /// Adds an item to the user's shopping cart.
-        /// 
-        /// HTTP Method: POST
-        /// Route: /api/carts/{userId}/items
-        /// 
-        /// This endpoint adds a food item to the user's cart with specified quantity.
-        /// If product already in cart, quantity is increased.
-        /// Updates cart's lastUpdated timestamp.
-        /// 
-        /// Important Validations:
-        /// - User must exist and be active
-        /// - Product must exist
-        /// - Product must have sufficient stock
-        /// - Quantity must be positive
-        /// 
-        /// Request Body Format:
-        /// {
-        ///   "foodItemId": 1,
-        ///   "quantity": 2
-        /// }
+        /// CUSTOMER ENDPOINT - Requires Authentication
         /// </summary>
         /// <param name="userId">The user ID adding item to cart</param>
         /// <param name="addToCartDTO">Contains product ID and quantity</param>
@@ -228,6 +205,14 @@ namespace FoodEcommerceWebAPI.Controllers.Carts
         [HttpPost("{userId}/items")]
         public async Task<IActionResult> AddToCart(int userId, [FromBody] AddToCartDTO addToCartDTO)
         {
+            var currentUserId = int.Parse(User.FindFirst("uid")?.Value ?? "0");
+            var userRole = User.FindFirst("role")?.Value;
+
+            if (userRole != "Admin" && currentUserId != userId)
+            {
+                return Forbid("You can only add items to your own cart");
+            }
+
             // Verify user exists and is active
             var user = await dbContext.Users.FirstOrDefaultAsync(u => u.UserId == userId && u.IsActive);
             if (user == null)
@@ -303,18 +288,7 @@ namespace FoodEcommerceWebAPI.Controllers.Carts
 
         /// <summary>
         /// Updates the quantity of an item in the cart.
-        /// 
-        /// HTTP Method: PUT
-        /// Route: /api/carts/{userId}/items/{cartItemId}
-        /// 
-        /// This endpoint changes the quantity of a specific item in the cart.
-        /// Validates product stock availability for new quantity.
-        /// Updates cart's lastUpdated timestamp.
-        /// 
-        /// Request Body Format:
-        /// {
-        ///   "quantity": 5
-        /// }
+        /// CUSTOMER ENDPOINT - Requires Authentication
         /// </summary>
         /// <param name="userId">The user ID whose cart to update</param>
         /// <param name="cartItemId">The cart item ID to update</param>
@@ -333,6 +307,14 @@ namespace FoodEcommerceWebAPI.Controllers.Carts
         [HttpPut("{userId}/items/{cartItemId}")]
         public async Task<IActionResult> UpdateCartItem(int userId, int cartItemId, [FromBody] UpdateCartItemDTO updateDTO)
         {
+            var currentUserId = int.Parse(User.FindFirst("uid")?.Value ?? "0");
+            var userRole = User.FindFirst("role")?.Value;
+
+            if (userRole != "Admin" && currentUserId != userId)
+            {
+                return Forbid("You can only update your own cart");
+            }
+
             // Verify user exists and is active
             var user = await dbContext.Users.FirstOrDefaultAsync(u => u.UserId == userId && u.IsActive);
             if (user == null)
@@ -386,12 +368,7 @@ namespace FoodEcommerceWebAPI.Controllers.Carts
 
         /// <summary>
         /// Removes an item from the shopping cart.
-        /// 
-        /// HTTP Method: DELETE
-        /// Route: /api/carts/{userId}/items/{cartItemId}
-        /// 
-        /// This endpoint removes a specific product from the user's cart.
-        /// Updates cart's lastUpdated timestamp.
+        /// CUSTOMER ENDPOINT - Requires Authentication
         /// </summary>
         /// <param name="userId">The user ID whose cart to update</param>
         /// <param name="cartItemId">The cart item ID to remove</param>
@@ -407,6 +384,14 @@ namespace FoodEcommerceWebAPI.Controllers.Carts
         [HttpDelete("{userId}/items/{cartItemId}")]
         public async Task<IActionResult> RemoveFromCart(int userId, int cartItemId)
         {
+            var currentUserId = int.Parse(User.FindFirst("uid")?.Value ?? "0");
+            var userRole = User.FindFirst("role")?.Value;
+
+            if (userRole != "Admin" && currentUserId != userId)
+            {
+                return Forbid("You can only modify your own cart");
+            }
+
             // Verify user exists and is active
             var user = await dbContext.Users.FirstOrDefaultAsync(u => u.UserId == userId && u.IsActive);
             if (user == null)
@@ -453,12 +438,7 @@ namespace FoodEcommerceWebAPI.Controllers.Carts
 
         /// <summary>
         /// Clears all items from the user's shopping cart.
-        /// 
-        /// HTTP Method: DELETE
-        /// Route: /api/carts/{userId}
-        /// 
-        /// This endpoint removes all items from the user's cart.
-        /// Cart itself remains in the database with 0 items.
+        /// CUSTOMER ENDPOINT - Requires Authentication
         /// </summary>
         /// <param name="userId">The user ID whose cart to clear</param>
         /// <returns>
@@ -476,6 +456,14 @@ namespace FoodEcommerceWebAPI.Controllers.Carts
         [HttpDelete("{userId}")]
         public async Task<IActionResult> ClearCart(int userId)
         {
+            var currentUserId = int.Parse(User.FindFirst("uid")?.Value ?? "0");
+            var userRole = User.FindFirst("role")?.Value;
+
+            if (userRole != "Admin" && currentUserId != userId)
+            {
+                return Forbid("You can only clear your own cart");
+            }
+
             // Verify user exists and is active
             var user = await dbContext.Users.FirstOrDefaultAsync(u => u.UserId == userId && u.IsActive);
             if (user == null)
