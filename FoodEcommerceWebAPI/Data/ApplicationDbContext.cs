@@ -18,6 +18,7 @@ namespace FoodEcommerceWebAPI.Data
     /// - OrderItems: Individual items within an order
     /// - OrderStatus: Status tracking for orders
     /// - Addresses: User delivery/billing addresses
+    /// - Reviews: Product reviews and ratings
     /// </summary>
     public class ApplicationDbContext : DbContext
     {
@@ -88,6 +89,12 @@ namespace FoodEcommerceWebAPI.Data
         public DbSet<OrderStatus> orderStatuses { get; set; }
 
         /// <summary>
+        /// DbSet for Reviews entity. Represents product reviews and ratings from customers.
+        /// Contains review information like rating, comment, and creation date.
+        /// </summary>
+        public DbSet<ReviewEntity> Reviews { get; set; }
+
+        /// <summary>
         /// Configures the model relationships, primary keys, foreign keys, and column specifications.
         /// This method is called by Entity Framework to build the model for the database.
         /// </summary>
@@ -134,6 +141,12 @@ namespace FoodEcommerceWebAPI.Data
             /// Uniquely identifies each order status record
             /// </summary>
             modelBuilder.Entity<OrderStatus>().HasKey(os => os.Orderid);
+
+            /// <summary>
+            /// ReviewEntity primary key: ReviewId
+            /// Uniquely identifies each review in the system
+            /// </summary>
+            modelBuilder.Entity<ReviewEntity>().HasKey(r => r.ReviewId);
 
             // --- FOREIGN KEY RELATIONSHIPS ---
             // Establishes one-to-many and one-to-one relationships between entities
@@ -194,6 +207,35 @@ namespace FoodEcommerceWebAPI.Data
                 .HasOne<OrderEntity>()
                 .WithOne() // Assuming one status record per order
                 .HasForeignKey<OrderStatus>(os => os.Orderid);
+
+            /// <summary>
+            /// User (1) --> Reviews (Many)
+            /// One user can write multiple reviews for different products.
+            /// </summary>
+            modelBuilder.Entity<ReviewEntity>()
+                .HasOne(r => r.User)
+                .WithMany()
+                .HasForeignKey(r => r.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            /// <summary>
+            /// FoodItem (1) --> Reviews (Many)
+            /// One product can have multiple reviews from different customers.
+            /// </summary>
+            modelBuilder.Entity<ReviewEntity>()
+                .HasOne(r => r.FoodItem)
+                .WithMany()
+                .HasForeignKey(r => r.FoodItemId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            // --- UNIQUE CONSTRAINTS ---
+            /// <summary>
+            /// One review per customer per product
+            /// Prevents duplicate reviews from the same user for the same product
+            /// </summary>
+            modelBuilder.Entity<ReviewEntity>()
+                .HasIndex(r => new { r.UserId, r.FoodItemId })
+                .IsUnique();
 
             // --- DECIMAL PRECISION (Crucial for Money) ---
             // Configures decimal columns to use 18,2 precision (dollars and cents)
