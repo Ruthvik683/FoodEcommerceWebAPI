@@ -1,6 +1,7 @@
 ﻿using FoodEcommerceWebAPI.Data;
 using FoodEcommerceWebAPI.Models.DTOs;
 using FoodEcommerceWebAPI.Models.Entities;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
@@ -8,40 +9,25 @@ namespace FoodEcommerceWebAPI.Controllers.Addresses
 {
     #region APISummary
     /// <summary>
-    /// AddressesController handles all user address-related API operations.
+    /// AddressesController handles all user address-related API operations with role-based authorization.
     /// 
-    /// Provides endpoints for:
-    /// - Creating new addresses
-    /// - Retrieving user's addresses
-    /// - Updating address information
-    /// - Deleting addresses
-    /// - Setting default address
-    /// - Getting address list for checkout
-    /// 
-    /// This controller uses DTOs (Data Transfer Objects) to:
-    /// - Provide a clean API contract separate from database entities
-    /// - Validate input data before processing
-    /// - Transfer address information efficiently
-    /// 
-    /// Address Management:
-    /// - Each user can have multiple delivery/billing addresses
-    /// - One address per user can be marked as default
-    /// - Addresses are used for order shipping
-    /// - Addresses persist across orders for convenience
-    /// 
-    /// Route: /api/addresses
-    /// Endpoints:
+    /// Customer Endpoints (Authentication Required):
     /// - POST /api/addresses - Create new address
-    /// - GET /api/addresses/user/{userId} - Get user's addresses
-    /// - GET /api/addresses/{addressId} - Get specific address
-    /// - GET /api/addresses/user/{userId}/default - Get default address
-    /// - PUT /api/addresses/{addressId} - Update address
-    /// - DELETE /api/addresses/{addressId} - Delete address
-    /// - PUT /api/addresses/{addressId}/set-default - Set as default address
+    /// - GET /api/addresses/{addressId} - Get own address
+    /// - GET /api/addresses/user/{userId} - Get own addresses
+    /// - GET /api/addresses/user/{userId}/default - Get own default address
+    /// - PUT /api/addresses/{addressId} - Update own address
+    /// - PUT /api/addresses/{addressId}/set-default - Set own default address
+    /// - DELETE /api/addresses/{addressId} - Delete own address
+    /// 
+    /// Authorization:
+    /// - Customers can only manage their own addresses
+    /// - Admins can manage any user's addresses
     /// </summary>
     #endregion
     [Route("api/[controller]")]
     [ApiController]
+    [Authorize]
     public class AddressesController : ControllerBase
     {
         /// <summary>
@@ -62,6 +48,7 @@ namespace FoodEcommerceWebAPI.Controllers.Addresses
 
         /// <summary>
         /// Creates a new address for a user.
+        /// CUSTOMER ENDPOINT - Requires Authentication
         /// 
         /// HTTP Method: POST
         /// Route: /api/addresses
@@ -99,6 +86,15 @@ namespace FoodEcommerceWebAPI.Controllers.Addresses
         [HttpPost]
         public async Task<IActionResult> CreateAddress([FromQuery] int userId, [FromBody] CreateAddressDTO createAddressDTO)
         {
+            var currentUserId = int.Parse(User.FindFirst("uid")?.Value ?? "0");
+            var userRole = User.FindFirst("role")?.Value;
+
+            // Authorization check
+            if (userRole != "Admin" && currentUserId != userId)
+            {
+                return Forbid("You can only create addresses for yourself");
+            }
+
             // Verify user exists and is active
             var user = await dbContext.Users.FirstOrDefaultAsync(u => u.UserId == userId && u.IsActive);
             if (user == null)
@@ -143,6 +139,7 @@ namespace FoodEcommerceWebAPI.Controllers.Addresses
 
         /// <summary>
         /// Retrieves a specific address by ID.
+        /// CUSTOMER ENDPOINT - Requires Authentication
         /// 
         /// HTTP Method: GET
         /// Route: /api/addresses/{addressId}
@@ -171,11 +168,20 @@ namespace FoodEcommerceWebAPI.Controllers.Addresses
         [HttpGet("{addressId}")]
         public async Task<IActionResult> GetAddressById(int addressId)
         {
+            var currentUserId = int.Parse(User.FindFirst("uid")?.Value ?? "0");
+            var userRole = User.FindFirst("role")?.Value;
+
             var address = await dbContext.Addresses.FirstOrDefaultAsync(a => a.ID == addressId);
 
             if (address == null)
             {
                 return NotFound($"Address with ID {addressId} not found");
+            }
+
+            // Authorization check
+            if (userRole != "Admin" && currentUserId != address.Userid)
+            {
+                return Forbid("You can only view your own addresses");
             }
 
             var addressDTO = MapAddressToDTO(address);
@@ -185,6 +191,7 @@ namespace FoodEcommerceWebAPI.Controllers.Addresses
 
         /// <summary>
         /// Retrieves all addresses for a specific user.
+        /// CUSTOMER ENDPOINT - Requires Authentication
         /// 
         /// HTTP Method: GET
         /// Route: /api/addresses/user/{userId}
@@ -216,6 +223,15 @@ namespace FoodEcommerceWebAPI.Controllers.Addresses
         [HttpGet("user/{userId}")]
         public async Task<IActionResult> GetUserAddresses(int userId)
         {
+            var currentUserId = int.Parse(User.FindFirst("uid")?.Value ?? "0");
+            var userRole = User.FindFirst("role")?.Value;
+
+            // Authorization check
+            if (userRole != "Admin" && currentUserId != userId)
+            {
+                return Forbid("You can only view your own addresses");
+            }
+
             // Verify user exists and is active
             var user = await dbContext.Users.FirstOrDefaultAsync(u => u.UserId == userId && u.IsActive);
             if (user == null)
@@ -240,6 +256,7 @@ namespace FoodEcommerceWebAPI.Controllers.Addresses
 
         /// <summary>
         /// Retrieves the default address for a user.
+        /// CUSTOMER ENDPOINT - Requires Authentication
         /// 
         /// HTTP Method: GET
         /// Route: /api/addresses/user/{userId}/default
@@ -258,6 +275,15 @@ namespace FoodEcommerceWebAPI.Controllers.Addresses
         [HttpGet("user/{userId}/default")]
         public async Task<IActionResult> GetDefaultAddress(int userId)
         {
+            var currentUserId = int.Parse(User.FindFirst("uid")?.Value ?? "0");
+            var userRole = User.FindFirst("role")?.Value;
+
+            // Authorization check
+            if (userRole != "Admin" && currentUserId != userId)
+            {
+                return Forbid("You can only view your own addresses");
+            }
+
             // Verify user exists and is active
             var user = await dbContext.Users.FirstOrDefaultAsync(u => u.UserId == userId && u.IsActive);
             if (user == null)
@@ -280,6 +306,7 @@ namespace FoodEcommerceWebAPI.Controllers.Addresses
 
         /// <summary>
         /// Updates an existing address.
+        /// CUSTOMER ENDPOINT - Requires Authentication
         /// 
         /// HTTP Method: PUT
         /// Route: /api/addresses/{addressId}
@@ -312,11 +339,20 @@ namespace FoodEcommerceWebAPI.Controllers.Addresses
         [HttpPut("{addressId}")]
         public async Task<IActionResult> UpdateAddress(int addressId, [FromBody] UpdateAddressDTO updateDTO)
         {
+            var currentUserId = int.Parse(User.FindFirst("uid")?.Value ?? "0");
+            var userRole = User.FindFirst("role")?.Value;
+
             var address = await dbContext.Addresses.FirstOrDefaultAsync(a => a.ID == addressId);
 
             if (address == null)
             {
                 return NotFound($"Address with ID {addressId} not found");
+            }
+
+            // Authorization check
+            if (userRole != "Admin" && currentUserId != address.Userid)
+            {
+                return Forbid("You can only update your own addresses");
             }
 
             if (!ModelState.IsValid)
@@ -376,6 +412,7 @@ namespace FoodEcommerceWebAPI.Controllers.Addresses
 
         /// <summary>
         /// Sets an address as the default address for the user.
+        /// CUSTOMER ENDPOINT - Requires Authentication
         /// 
         /// HTTP Method: PUT
         /// Route: /api/addresses/{addressId}/set-default
@@ -394,11 +431,20 @@ namespace FoodEcommerceWebAPI.Controllers.Addresses
         [HttpPut("{addressId}/set-default")]
         public async Task<IActionResult> SetDefaultAddress(int addressId)
         {
+            var currentUserId = int.Parse(User.FindFirst("uid")?.Value ?? "0");
+            var userRole = User.FindFirst("role")?.Value;
+
             var address = await dbContext.Addresses.FirstOrDefaultAsync(a => a.ID == addressId);
 
             if (address == null)
             {
                 return NotFound($"Address with ID {addressId} not found");
+            }
+
+            // Authorization check
+            if (userRole != "Admin" && currentUserId != address.Userid)
+            {
+                return Forbid("You can only modify your own addresses");
             }
 
             // Unset current default
@@ -423,6 +469,7 @@ namespace FoodEcommerceWebAPI.Controllers.Addresses
 
         /// <summary>
         /// Deletes a user's address.
+        /// CUSTOMER ENDPOINT - Requires Authentication
         /// 
         /// HTTP Method: DELETE
         /// Route: /api/addresses/{addressId}
@@ -451,11 +498,20 @@ namespace FoodEcommerceWebAPI.Controllers.Addresses
         [HttpDelete("{addressId}")]
         public async Task<IActionResult> DeleteAddress(int addressId)
         {
+            var currentUserId = int.Parse(User.FindFirst("uid")?.Value ?? "0");
+            var userRole = User.FindFirst("role")?.Value;
+
             var address = await dbContext.Addresses.FirstOrDefaultAsync(a => a.ID == addressId);
 
             if (address == null)
             {
                 return NotFound($"Address with ID {addressId} not found");
+            }
+
+            // Authorization check
+            if (userRole != "Admin" && currentUserId != address.Userid)
+            {
+                return Forbid("You can only delete your own addresses");
             }
 
             // Check if this is the only address for the user
