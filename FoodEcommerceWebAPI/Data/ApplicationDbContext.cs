@@ -95,6 +95,18 @@ namespace FoodEcommerceWebAPI.Data
         public DbSet<ReviewEntity> Reviews { get; set; }
 
         /// <summary>
+        /// DbSet for Wishlists entity. Represents user wishlists.
+        /// Each user has one wishlist for saving favorite products.
+        /// </summary>
+        public DbSet<WishlistEntity> Wishlists { get; set; }
+
+        /// <summary>
+        /// DbSet for WishlistItems entity. Represents individual items in wishlists.
+        /// Links wishlists to food items.
+        /// </summary>
+        public DbSet<WishlistItemEntity> WishlistItems { get; set; }
+
+        /// <summary>
         /// Configures the model relationships, primary keys, foreign keys, and column specifications.
         /// This method is called by Entity Framework to build the model for the database.
         /// </summary>
@@ -147,6 +159,18 @@ namespace FoodEcommerceWebAPI.Data
             /// Uniquely identifies each review in the system
             /// </summary>
             modelBuilder.Entity<ReviewEntity>().HasKey(r => r.ReviewId);
+
+            /// <summary>
+            /// WishlistEntity primary key: WishlistId
+            /// Uniquely identifies each wishlist in the system
+            /// </summary>
+            modelBuilder.Entity<WishlistEntity>().HasKey(w => w.WishlistId);
+
+            /// <summary>
+            /// WishlistItemEntity primary key: WishlistItemId
+            /// Uniquely identifies each item within a wishlist
+            /// </summary>
+            modelBuilder.Entity<WishlistItemEntity>().HasKey(wi => wi.WishlistItemId);
 
             // --- FOREIGN KEY RELATIONSHIPS ---
             // Establishes one-to-many and one-to-one relationships between entities
@@ -219,6 +243,16 @@ namespace FoodEcommerceWebAPI.Data
                 .OnDelete(DeleteBehavior.Cascade);
 
             /// <summary>
+            /// User (1) --> Reviews (Many)
+            /// One user can write multiple reviews for different products.
+            /// </summary>
+            modelBuilder.Entity<ReviewEntity>()
+                .HasOne(r => r.User)
+                .WithMany()
+                .HasForeignKey(r => r.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            /// <summary>
             /// FoodItem (1) --> Reviews (Many)
             /// One product can have multiple reviews from different customers.
             /// </summary>
@@ -227,6 +261,45 @@ namespace FoodEcommerceWebAPI.Data
                 .WithMany()
                 .HasForeignKey(r => r.FoodItemId)
                 .OnDelete(DeleteBehavior.Cascade);
+
+            // --- WISHLIST CONFIGURATION ---
+            /// <summary>
+            /// User (1) --> Wishlist (1)
+            /// One user can have exactly one wishlist
+            /// </summary>
+            modelBuilder.Entity<WishlistEntity>()
+                .HasOne(w => w.User)
+                .WithOne(u => u.Wishlist)
+                .HasForeignKey<WishlistEntity>(w => w.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            /// <summary>
+            /// Wishlist (1) --> WishlistItems (Many)
+            /// One wishlist can contain multiple items
+            /// </summary>
+            modelBuilder.Entity<WishlistItemEntity>()
+                .HasOne(wi => wi.Wishlist)
+                .WithMany(w => w.WishlistItems)
+                .HasForeignKey(wi => wi.WishlistId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            /// <summary>
+            /// FoodItem (1) --> WishlistItems (Many)
+            /// One product can be in multiple wishlists
+            /// </summary>
+            modelBuilder.Entity<WishlistItemEntity>()
+                .HasOne(wi => wi.FoodItem)
+                .WithMany()
+                .HasForeignKey(wi => wi.FoodItemId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            /// <summary>
+            /// Unique constraint: one item per wishlist
+            /// Prevents the same product being added multiple times to one wishlist
+            /// </summary>
+            modelBuilder.Entity<WishlistItemEntity>()
+                .HasIndex(wi => new { wi.WishlistId, wi.FoodItemId })
+                .IsUnique();
 
             // --- UNIQUE CONSTRAINTS ---
             /// <summary>
@@ -261,6 +334,57 @@ namespace FoodEcommerceWebAPI.Data
             /// This precision ensures accurate line item calculations in orders
             /// </summary>
             modelBuilder.Entity<OrderItemEntity>().Property(oi => oi.UnitPrice).HasColumnType("decimal(18,2)");
+
+            // --- WISHLIST CONFIGURATION ---
+            /// <summary>
+            /// Wishlist primary key: WishlistId
+            /// Uniquely identifies each wishlist
+            /// </summary>
+            modelBuilder.Entity<WishlistEntity>().HasKey(w => w.WishlistId);
+
+            /// <summary>
+            /// WishlistItem primary key: WishlistItemId
+            /// Uniquely identifies each wishlist item
+            /// </summary>
+            modelBuilder.Entity<WishlistItemEntity>().HasKey(wi => wi.WishlistItemId);
+
+            /// <summary>
+            /// User (1) --> Wishlist (1)
+            /// One user can have exactly one wishlist
+            /// </summary>
+            modelBuilder.Entity<WishlistEntity>()
+                .HasOne(w => w.User)
+                .WithOne(u => u.Wishlist)
+                .HasForeignKey<WishlistEntity>(w => w.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            /// <summary>
+            /// Wishlist (1) --> WishlistItems (Many)
+            /// One wishlist can contain multiple items
+            /// </summary>
+            modelBuilder.Entity<WishlistItemEntity>()
+                .HasOne(wi => wi.Wishlist)
+                .WithMany(w => w.WishlistItems)
+                .HasForeignKey(wi => wi.WishlistId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            /// <summary>
+            /// FoodItem (1) --> WishlistItems (Many)
+            /// One product can be in multiple wishlists
+            /// </summary>
+            modelBuilder.Entity<WishlistItemEntity>()
+                .HasOne(wi => wi.FoodItem)
+                .WithMany()
+                .HasForeignKey(wi => wi.FoodItemId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            /// <summary>
+            /// Unique constraint: one item per wishlist
+            /// Prevents the same product being added multiple times to one wishlist
+            /// </summary>
+            modelBuilder.Entity<WishlistItemEntity>()
+                .HasIndex(wi => new { wi.WishlistId, wi.FoodItemId })
+                .IsUnique();
         }
     }
 }

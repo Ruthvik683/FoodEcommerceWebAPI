@@ -113,5 +113,12 @@
         /// Example: user.Orders returns a list of all orders placed by this user.
         /// </summary>
         public virtual ICollection<OrderEntity> Orders { get; set; } = new List<OrderEntity>();
+
+        /// <summary>
+        /// Navigation property to the Wishlist.
+        /// Represents the user's wishlist containing favorite items.
+        /// Each user has exactly one wishlist.
+        /// </summary>
+        public virtual WishlistEntity? Wishlist { get; set; }
     }
 }
